@@ -1,0 +1,6 @@
+ColumnLimit: 0
+AllowShortIfStatementsOnASingleLine: AllIfsAndElse
+AlignConsecutiveMacros: true
+UseTab: Always
+TabWidth: 8
+IndentWidth: 8
