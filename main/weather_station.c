@@ -69,7 +69,9 @@ void app_main(void) {
 	DisableLED(GREEN);
 
 	while (true) {
-		// GetWeatherReadings(&bme280);
+		GetWeatherReadings(&bme280);
+		printf("temperature: %.2f C\nhumidity: %.2f%%\npressure: %.2f Pa\n\n",
+		       bme280.temperature, bme280.humidity, bme280.pressure);
 
 		// GetAirQuality(&pms5003);
 		//
