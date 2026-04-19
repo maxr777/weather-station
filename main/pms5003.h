@@ -1,4 +1,9 @@
+#ifndef PMS5003_H
+#define PMS5003_H
+
 #include "driver/uart.h"
+#include "esp_err.h"
+#include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "types.h"
 #include <stdbool.h>
@@ -35,7 +40,29 @@ typedef struct {
 	int pm100;
 } PMS5003;
 
-PMS5003 SetupPMS5003() {
+static inline PMS5003Data ParsePMS5003Frame(const u8 *buf) {
+	PMS5003Data data = {
+	    .frame_length = (u16)((u16)buf[2] << 8 | buf[3]),
+	    .data1 = (u16)((u16)buf[4] << 8 | buf[5]),
+	    .data2 = (u16)((u16)buf[6] << 8 | buf[7]),
+	    .data3 = (u16)((u16)buf[8] << 8 | buf[9]),
+	    .data4 = (u16)((u16)buf[10] << 8 | buf[11]),
+	    .data5 = (u16)((u16)buf[12] << 8 | buf[13]),
+	    .data6 = (u16)((u16)buf[14] << 8 | buf[15]),
+	    .data7 = (u16)((u16)buf[16] << 8 | buf[17]),
+	    .data8 = (u16)((u16)buf[18] << 8 | buf[19]),
+	    .data9 = (u16)((u16)buf[20] << 8 | buf[21]),
+	    .data10 = (u16)((u16)buf[22] << 8 | buf[23]),
+	    .data11 = (u16)((u16)buf[24] << 8 | buf[25]),
+	    .data12 = (u16)((u16)buf[26] << 8 | buf[27]),
+	    .data13 = (u16)((u16)buf[28] << 8 | buf[29]),
+	    .checksum = (u16)((u16)buf[30] << 8 | buf[31]),
+	};
+
+	return data;
+}
+
+static inline PMS5003 SetupPMS5003() {
 	uart_config_t uart_config = {
 	    .baud_rate = PMS5003_BAUD_RATE,
 	    .data_bits = UART_DATA_8_BITS,
@@ -59,7 +86,7 @@ PMS5003 SetupPMS5003() {
 	return pms;
 }
 
-bool ValidateChecksum(const u8 *buf) {
+static inline bool ValidateChecksum(const u8 *buf) {
 	int sum = 0;
 	for (int i = 0; i < PMS5003_FRAME_SIZE - 2; ++i) {
 		sum += buf[i];
@@ -78,7 +105,7 @@ typedef enum {
 	INVALID_CHECKSUM,
 } GetAirQualityErrorCodes;
 
-const char *GetAirQualityErrorCodesToStr(const GetAirQualityErrorCodes code) {
+static inline const char *GetAirQualityErrorCodesToStr(const GetAirQualityErrorCodes code) {
 	switch (code) {
 	case OK:
 		return "OK";
@@ -93,7 +120,7 @@ const char *GetAirQualityErrorCodesToStr(const GetAirQualityErrorCodes code) {
 	}
 }
 
-GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
+static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	const int START1 = 0x42;
 	const int START2 = 0x4d;
 
@@ -127,9 +154,12 @@ GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	if (!ValidateChecksum(buf))
 		return INVALID_CHECKSUM;
 
+	pms->data = ParsePMS5003Frame(buf);
 	pms->pm10 = pms->data.data4;
 	pms->pm25 = pms->data.data5;
 	pms->pm100 = pms->data.data6;
 
 	return OK;
 }
+
+#endif

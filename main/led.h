@@ -16,7 +16,7 @@ typedef enum {
 	COLOR_COUNT,
 } LEDColor;
 
-int GetLEDGPIO(const LEDColor c) {
+static inline int GetLEDGPIO(const LEDColor c) {
 	switch (c) {
 	case WHITE:
 		return WHITE_LED_GPIO;
@@ -32,13 +32,13 @@ int GetLEDGPIO(const LEDColor c) {
 }
 
 // TODO: error check
-void EnableLED(const LEDColor c) {
+static inline void EnableLED(const LEDColor c) {
 	int gpio = GetLEDGPIO(c);
 	if (gpio != 0)
 		gpio_set_level(gpio, 1);
 }
 
-void DisableLED(const LEDColor c) {
+static inline void DisableLED(const LEDColor c) {
 	int gpio = GetLEDGPIO(c);
 	if (gpio != 0)
 		gpio_set_level(gpio, 0);

@@ -5,6 +5,7 @@
 #include "esp_log.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "types.h"
 
 #define BME280_ADDR 0x76
@@ -41,7 +42,7 @@ typedef struct {
 	float pressure;
 } BME280;
 
-BME280 SetupBME280(int addr, i2c_master_bus_handle_t masterBusHandle) {
+static inline BME280 SetupBME280(int addr, i2c_master_bus_handle_t masterBusHandle) {
 	BME280 bme = {};
 	while (i2c_master_probe(masterBusHandle, addr, -1) != ESP_OK) {
 		vTaskDelay(pdMS_TO_TICKS(250));
@@ -135,7 +136,7 @@ BME280 SetupBME280(int addr, i2c_master_bus_handle_t masterBusHandle) {
 }
 
 // temperature - returns degrees C * 100 (e.g. 2345 = 23.45°C)
-i32 CompensateTemperature(BME280 *bme, i32 raw_t) {
+static inline i32 CompensateTemperature(BME280 *bme, i32 raw_t) {
 	i32 var1, var2, T;
 
 	var1 = ((((raw_t >> 3) - ((i32)bme->offsets.T1 << 1))) * ((i32)bme->offsets.T2)) >> 11;
@@ -152,7 +153,7 @@ i32 CompensateTemperature(BME280 *bme, i32 raw_t) {
 }
 
 // pressure - returns Pa * 256
-u32 CompensatePressure(BME280 *bme, i32 raw_p) {
+static inline u32 CompensatePressure(BME280 *bme, i32 raw_p) {
 	i64 var1, var2, p;
 	var1 = ((i64)bme->t_fine) - 128000;
 
@@ -179,7 +180,7 @@ u32 CompensatePressure(BME280 *bme, i32 raw_p) {
 }
 
 // humidity - returns %RH * 1024
-uint32_t CompensateHumidity(BME280 *bme, int32_t adc_H) {
+static inline u32 CompensateHumidity(BME280 *bme, i32 adc_H) {
 	i32 v_x1_u32r;
 
 	v_x1_u32r = (bme->t_fine - ((i32)76800));
@@ -208,7 +209,7 @@ uint32_t CompensateHumidity(BME280 *bme, int32_t adc_H) {
 	return (u32)(v_x1_u32r >> 12);
 }
 
-void GetWeatherReadings(BME280 *bme) {
+static inline void GetWeatherReadings(BME280 *bme) {
 	u8 reg = 0xF7;
 	u8 raw[8];
 	ESP_ERROR_CHECK(i2c_master_transmit_receive(bme->handle, &reg, 1, raw, sizeof(raw), 100));
