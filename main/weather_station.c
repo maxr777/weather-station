@@ -1,11 +1,13 @@
 #include "bme280.h"
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
+#include "driver/uart.h"
 #include "esp_flash.h"
 #include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "led.h"
+#include "pms5003.h"
 #include "sdkconfig.h"
 #include "types.h"
 #include <inttypes.h>
@@ -17,12 +19,6 @@ typedef struct {
 	i2c_device_config_t config;
 	bool screen[128][64];
 } SH1106;
-
-typedef struct {
-	int pm10;
-	int pm25;
-	int pm100;
-} PMS5003;
 
 void app_main(void) {
 	// Setup the LED GPIOs as output
@@ -50,15 +46,17 @@ void app_main(void) {
 	i2c_master_bus_handle_t masterBusHandle;
 	ESP_ERROR_CHECK(i2c_new_master_bus(&busConfig, &masterBusHandle));
 
+	// Setup UART
+
 	// Setup the sensors
 	EnableLED(WHITE);
 	BME280 bme280 = SetupBME280(BME280_ADDR, masterBusHandle);
 
-	// EnableLED(BLUE);
-	// SH1106 sh1106 = SetupSH1106(0x3C);
+	EnableLED(BLUE);
+	PMS5003 pms5003 = SetupPMS5003();
 
 	// EnableLED(RED);
-	// PMS5003 pms5003 = SetupBME280();
+	// SH1106 sh1106 = SetupSH1106(0x3C);
 
 	EnableLED(GREEN);
 	vTaskDelay(pdMS_TO_TICKS(1000));
@@ -70,11 +68,12 @@ void app_main(void) {
 
 	while (true) {
 		GetWeatherReadings(&bme280);
-		printf("temperature: %.2f C\nhumidity: %.2f%%\npressure: %.2f Pa\n\n",
+		printf("temperature: %.2f C\nhumidity: %.2f%%\npressure: %.2f Pa\n",
 		       bme280.temperature, bme280.humidity, bme280.pressure);
 
-		// GetAirQuality(&pms5003);
-		//
+		printf("pm 1.0: %d\npm 2.5: %d\npm 10: %d\n\n",
+		       pms5003.pm10, pms5003.pm25, pms5003.pm100);
+
 		// snprintf();
 		//
 		// DisplayText("abcd\nabcd\n");
