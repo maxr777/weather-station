@@ -1,21 +1,9 @@
 # Weather Station
 
-ESP-IDF project for a custom ESP32-based weather station.
+ESP32-based weather station built with ESP-IDF, no third-party sensor libraries.
 
-## Project Layout
+Reads temperature, humidity, and pressure via a BME280 over I2C, monitors air quality with a PMS5003 over UART, and displays everything on an SH1106 OLED. A few diagnostic LEDs signal hardware faults on startup.
 
-```text
-.
-├── CMakeLists.txt
-├── main
-│   ├── CMakeLists.txt
-│   └── weather_station.c
-├── sdkconfig
-└── sdkconfig.ci
-```
+All sensor drivers written from scratch against the datasheets. Font by [petabyt](https://github.com/petabyt/font). Startup logo generated with Claude.
 
-## Build
-
-```sh
-idf.py build flash monitor
-```
+**Build:** `idf.py build flash monitor`
