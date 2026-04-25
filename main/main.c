@@ -28,7 +28,6 @@ void app_main(void) {
 	busConfig.glitch_ignore_cnt = 7;
 	busConfig.intr_priority = 0;
 	busConfig.trans_queue_depth = 0;
-	// Internal pullups work fine with both BME280 and SH1106, so I didn't use any external ones
 	busConfig.flags.enable_internal_pullup = 1;
 	busConfig.flags.allow_pd = 0;
 
