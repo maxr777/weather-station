@@ -209,10 +209,27 @@ static inline u32 CompensateHumidity(BME280 *bme, i32 adc_H) {
 	return (u32)(v_x1_u32r >> 12);
 }
 
-static inline void GetWeatherReadings(BME280 *bme) {
+typedef enum {
+	BME_OK,
+	BME_FAIL_TO_READ_RAW_DATA,
+} GetWeatherReadingsErrorCodes;
+
+static inline const char *GetWeatherReadingsErrorCodesToStr(const GetWeatherReadingsErrorCodes code) {
+	switch (code) {
+	case BME_OK:
+		return "BME_OK";
+	case BME_FAIL_TO_READ_RAW_DATA:
+		return "BME_FAIL_TO_READ_RAW_DATA";
+	default:
+		return "UNKNOWN";
+	}
+}
+
+static inline GetWeatherReadingsErrorCodes GetWeatherReadings(BME280 *bme) {
 	u8 reg = 0xF7;
 	u8 raw[8];
-	ESP_ERROR_CHECK(i2c_master_transmit_receive(bme->handle, &reg, 1, raw, sizeof(raw), 100));
+	if (i2c_master_transmit_receive(bme->handle, &reg, 1, raw, sizeof(raw), 100) != ESP_OK)
+		return BME_FAIL_TO_READ_RAW_DATA;
 
 	// pressure - 20 bit
 	i32 raw_p = (i32)((u32)raw[0] << 12 | (u32)raw[1] << 4 | raw[2] >> 4);
@@ -224,6 +241,8 @@ static inline void GetWeatherReadings(BME280 *bme) {
 	bme->temperature = CompensateTemperature(bme, raw_t) / 100.0f;
 	bme->humidity = CompensateHumidity(bme, raw_h) / 1024.0f;
 	bme->pressure = CompensatePressure(bme, raw_p) / 256.0f;
+
+	return BME_OK;
 }
 
 #endif

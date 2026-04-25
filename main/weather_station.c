@@ -61,7 +61,7 @@ void app_main(void) {
 	DisableLED(GREEN);
 
 	while (true) {
-		GetWeatherReadings(&bme280);
+		GetWeatherReadingsErrorCodes BME280ErrorCode = GetWeatherReadings(&bme280);
 		GetAirQualityErrorCodes PMS5003ErrorCode = GetAirQuality(&pms5003);
 
 		char temp[20];
@@ -71,18 +71,26 @@ void app_main(void) {
 		char pm25[20];
 		char pm100[20];
 
-		snprintf(temp, sizeof(temp), "T: %.0f C", bme280.temperature);
-		snprintf(humidity, sizeof(humidity), "H: %.0f%%", bme280.humidity);
-		snprintf(pressure, sizeof(pressure), "P: %.0f hPa", bme280.pressure / 100);
-
-		if (PMS5003ErrorCode != PMS_OK) {
-			snprintf(pm10, sizeof(pm10), "PM 1.0: %d*", pms5003.pm10);
-			snprintf(pm25, sizeof(pm25), "PM 2.5: %d*", pms5003.pm25);
-			snprintf(pm100, sizeof(pm100), "PM 10:  %d*", pms5003.pm100);
+		if (BME280ErrorCode == BME_OK) {
+			snprintf(temp, sizeof(temp), "T: %.0f C", bme280.temperature);
+			snprintf(humidity, sizeof(humidity), "H: %.0f%%", bme280.humidity);
+			snprintf(pressure, sizeof(pressure), "P: %.0f hPa", bme280.pressure / 100);
 		} else {
+			ESP_LOGE("PMS5003", "%s", GetWeatherReadingsErrorCodesToStr(BME280ErrorCode));
+			snprintf(temp, sizeof(temp), "T: %.0f C*", bme280.temperature);
+			snprintf(humidity, sizeof(humidity), "H: %.0f%%*", bme280.humidity);
+			snprintf(pressure, sizeof(pressure), "P: %.0f hPa*", bme280.pressure / 100);
+		}
+
+		if (PMS5003ErrorCode == PMS_OK) {
 			snprintf(pm10, sizeof(pm10), "PM 1.0: %d", pms5003.pm10);
 			snprintf(pm25, sizeof(pm25), "PM 2.5: %d", pms5003.pm25);
 			snprintf(pm100, sizeof(pm100), "PM 10:  %d", pms5003.pm100);
+		} else {
+			ESP_LOGE("PMS5003", "%s", GetAirQualityErrorCodesToStr(PMS5003ErrorCode));
+			snprintf(pm10, sizeof(pm10), "PM 1.0: %d*", pms5003.pm10);
+			snprintf(pm25, sizeof(pm25), "PM 2.5: %d*", pms5003.pm25);
+			snprintf(pm100, sizeof(pm100), "PM 10:  %d*", pms5003.pm100);
 		}
 
 		SH1106ClearScreen(&sh1106);
