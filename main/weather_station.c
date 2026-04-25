@@ -9,16 +9,11 @@
 #include "led.h"
 #include "pms5003.h"
 #include "sdkconfig.h"
+#include "sh1106.h"
 #include "types.h"
 #include <inttypes.h>
 #include <stdbool.h>
 #include <stdio.h>
-
-typedef struct {
-	i2c_master_dev_handle_t handle;
-	i2c_device_config_t config;
-	bool screen[128][64];
-} SH1106;
 
 void app_main(void) {
 	// Setup the LED GPIOs as output
@@ -40,23 +35,22 @@ void app_main(void) {
 	busConfig.glitch_ignore_cnt = 7;
 	busConfig.intr_priority = 0;
 	busConfig.trans_queue_depth = 0;
-	busConfig.flags.enable_internal_pullup = 0;
+	busConfig.flags.enable_internal_pullup = 1;
 	busConfig.flags.allow_pd = 0;
 
 	i2c_master_bus_handle_t masterBusHandle;
 	ESP_ERROR_CHECK(i2c_new_master_bus(&busConfig, &masterBusHandle));
 
-	// Setup UART
-
 	// Setup the sensors
 	EnableLED(WHITE);
-	BME280 bme280 = SetupBME280(BME280_ADDR, masterBusHandle);
+	BME280 bme280 = SetupBME280(masterBusHandle);
 
 	EnableLED(BLUE);
 	PMS5003 pms5003 = SetupPMS5003();
 
-	// EnableLED(RED);
-	// SH1106 sh1106 = SetupSH1106(0x3C);
+	EnableLED(RED);
+	SH1106 sh1106 = SetupSH1106(masterBusHandle);
+	sh1106.screen[128 / 2][64 / 2] = true;
 
 	EnableLED(GREEN);
 	vTaskDelay(pdMS_TO_TICKS(1000));
@@ -71,8 +65,11 @@ void app_main(void) {
 		printf("temperature: %.2f C\nhumidity: %.2f%%\npressure: %.2f Pa\n",
 		       bme280.temperature, bme280.humidity, bme280.pressure);
 
+		GetAirQuality(&pms5003);
 		printf("pm 1.0: %d\npm 2.5: %d\npm 10: %d\n\n",
 		       pms5003.pm10, pms5003.pm25, pms5003.pm100);
+
+		SH1106Flush(&sh1106);
 
 		// snprintf();
 		//

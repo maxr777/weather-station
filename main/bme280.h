@@ -42,16 +42,16 @@ typedef struct {
 	float pressure;
 } BME280;
 
-static inline BME280 SetupBME280(int addr, i2c_master_bus_handle_t masterBusHandle) {
+static inline BME280 SetupBME280(i2c_master_bus_handle_t masterBusHandle) {
 	BME280 bme = {};
-	while (i2c_master_probe(masterBusHandle, addr, -1) != ESP_OK) {
+	while (i2c_master_probe(masterBusHandle, BME280_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
+		ESP_LOGW("BME280", "Weather sensor not found, retrying...");
 		vTaskDelay(pdMS_TO_TICKS(250));
 	}
 
-	// init the device handle on i2c
 	bme.config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
-	bme.config.device_address = addr;
-	bme.config.scl_speed_hz = 400000;
+	bme.config.device_address = BME280_ADDR;
+	bme.config.scl_speed_hz = 100000;
 
 	ESP_ERROR_CHECK(i2c_master_bus_add_device(masterBusHandle, &bme.config, &bme.handle));
 

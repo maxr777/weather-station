@@ -99,22 +99,22 @@ static inline bool ValidateChecksum(const u8 *buf) {
 }
 
 typedef enum {
-	OK,
-	DIDNT_FIND_START_BYTES,
-	INCOMPLETE_FRAME_ON_READ,
-	INVALID_CHECKSUM,
+	PMS_OK,
+	PMS_DIDNT_FIND_START_BYTES,
+	PMS_INCOMPLETE_FRAME_ON_READ,
+	PMS_INVALID_CHECKSUM,
 } GetAirQualityErrorCodes;
 
 static inline const char *GetAirQualityErrorCodesToStr(const GetAirQualityErrorCodes code) {
 	switch (code) {
-	case OK:
-		return "OK";
-	case DIDNT_FIND_START_BYTES:
-		return "DIDNT_FIND_START_BYTES";
-	case INCOMPLETE_FRAME_ON_READ:
-		return "INCOMPLETE_FRAME_ON_READ";
-	case INVALID_CHECKSUM:
-		return "INVALID_CHECKSUM";
+	case PMS_OK:
+		return "PMS_OK";
+	case PMS_DIDNT_FIND_START_BYTES:
+		return "PMS_DIDNT_FIND_START_BYTES";
+	case PMS_INCOMPLETE_FRAME_ON_READ:
+		return "PMS_INCOMPLETE_FRAME_ON_READ";
+	case PMS_INVALID_CHECKSUM:
+		return "PMS_INVALID_CHECKSUM";
 	default:
 		return "UNKNOWN";
 	}
@@ -143,23 +143,23 @@ static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 		match = false;
 	}
 
-	if (!found_start) return DIDNT_FIND_START_BYTES;
+	if (!found_start) return PMS_DIDNT_FIND_START_BYTES;
 
 	buf[0] = START1;
 	buf[1] = START2;
 
 	int len = uart_read_bytes(PMS5003_UART_PORT, buf + 2, PMS5003_FRAME_SIZE - 2, pdMS_TO_TICKS(100));
-	if (len != PMS5003_FRAME_SIZE - 2) return INCOMPLETE_FRAME_ON_READ;
+	if (len != PMS5003_FRAME_SIZE - 2) return PMS_INCOMPLETE_FRAME_ON_READ;
 
 	if (!ValidateChecksum(buf))
-		return INVALID_CHECKSUM;
+		return PMS_INVALID_CHECKSUM;
 
 	pms->data = ParsePMS5003Frame(buf);
 	pms->pm10 = pms->data.data4;
 	pms->pm25 = pms->data.data5;
 	pms->pm100 = pms->data.data6;
 
-	return OK;
+	return PMS_OK;
 }
 
 #endif
