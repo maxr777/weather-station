@@ -76,7 +76,7 @@ void app_main(void) {
 			snprintf(humidity, sizeof(humidity), "H: %.0f%%", bme280.humidity);
 			snprintf(pressure, sizeof(pressure), "P: %.0f hPa", bme280.pressure / 100);
 		} else {
-			ESP_LOGE("PMS5003", "%s", GetWeatherReadingsErrorCodesToStr(BME280ErrorCode));
+			ESP_LOGE("BME280", "%s", GetWeatherReadingsErrorCodesToStr(BME280ErrorCode));
 			snprintf(temp, sizeof(temp), "T: %.0f C*", bme280.temperature);
 			snprintf(humidity, sizeof(humidity), "H: %.0f%%*", bme280.humidity);
 			snprintf(pressure, sizeof(pressure), "P: %.0f hPa*", bme280.pressure / 100);

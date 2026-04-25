@@ -248,6 +248,11 @@ static inline SH1106 SetupSH1106(i2c_master_bus_handle_t masterBusHandle) {
 	ESP_ERROR_CHECK(i2c_master_transmit(sh.handle, init_seq, sizeof(init_seq), pdMS_TO_TICKS(500)));
 
 	sh.screen = calloc(SH1106_WIDTH, sizeof(bool[SH1106_HEIGHT]));
+	if (sh.screen == NULL) {
+		ESP_LOGE("SH1106", "During SetupSH1106() calloc() call failed");
+		esp_restart();
+	}
+
 	for (int y = 0; y < SH1106_HEIGHT; ++y) {
 		for (int x = 0; x < SH1106_WIDTH; ++x) {
 			sh.screen[x][y] = bootLogo[x][y];
