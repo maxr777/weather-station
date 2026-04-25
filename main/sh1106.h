@@ -249,7 +249,7 @@ static inline SH1106 SetupSH1106(i2c_master_bus_handle_t masterBusHandle) {
 
 	sh.screen = calloc(SH1106_WIDTH, sizeof(bool[SH1106_HEIGHT]));
 	if (sh.screen == NULL) {
-		ESP_LOGE("SH1106", "During SetupSH1106() calloc() call failed");
+		ESP_LOGE("SH1106", "SetupSH1106(): calloc() fail");
 		esp_restart();
 	}
 
@@ -259,7 +259,10 @@ static inline SH1106 SetupSH1106(i2c_master_bus_handle_t masterBusHandle) {
 		}
 	}
 
-	SH1106Flush(&sh);
+	if (SH1106Flush(&sh) != SH_OK) {
+		ESP_LOGE("SH1106", "SetupSH1106(): SH1106Flush() fail");
+		esp_restart();
+	}
 
 	return sh;
 }

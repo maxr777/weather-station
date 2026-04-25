@@ -1,18 +1,11 @@
 #include "bme280.h"
 #include "driver/gpio.h"
 #include "driver/i2c_master.h"
-#include "driver/uart.h"
-#include "esp_flash.h"
-#include "esp_system.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "led.h"
 #include "pms5003.h"
-#include "sdkconfig.h"
 #include "sh1106.h"
-#include "types.h"
-#include <inttypes.h>
-#include <stdbool.h>
 #include <stdio.h>
 
 void app_main(void) {
@@ -100,7 +93,10 @@ void app_main(void) {
 		SH1106PrintText(&sh1106, pm10, 4);
 		SH1106PrintText(&sh1106, pm25, 5);
 		SH1106PrintText(&sh1106, pm100, 6);
-		SH1106Flush(&sh1106);
+		SH1106FlushErrorCodes SH1106ErrorCode = SH1106Flush(&sh1106);
+		if (SH1106ErrorCode != SH_OK) {
+			ESP_LOGE("SH1106", "%s", FlushErrorCodesToStr(SH1106ErrorCode));
+		}
 
 		fflush(stdout);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);

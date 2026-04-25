@@ -124,7 +124,9 @@ static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	const int START1 = 0x42;
 	const int START2 = 0x4d;
 
-	u8 buf[PMS5003_BUF_SIZE] = {};
+	// It only holds one frame so I'm using the FRAME_SIZE
+	// The BUF_SIZE constant is for the UART driver (how big the queue can get)
+	u8 buf[PMS5003_FRAME_SIZE] = {};
 
 	// i < 64 to not loop forever
 	bool match = false;

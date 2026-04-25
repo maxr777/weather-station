@@ -27,20 +27,20 @@ static inline int GetLEDGPIO(const LEDColor c) {
 	case GREEN:
 		return GREEN_LED_GPIO;
 	default:
-		return 0;
+		return -1;
 	}
 }
 
 // TODO: error check
 static inline void EnableLED(const LEDColor c) {
 	int gpio = GetLEDGPIO(c);
-	if (gpio != 0)
+	if (gpio != -1)
 		gpio_set_level(gpio, 1);
 }
 
 static inline void DisableLED(const LEDColor c) {
 	int gpio = GetLEDGPIO(c);
-	if (gpio != 0)
+	if (gpio != -1)
 		gpio_set_level(gpio, 0);
 }
 
