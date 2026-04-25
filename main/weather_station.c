@@ -35,6 +35,7 @@ void app_main(void) {
 	busConfig.glitch_ignore_cnt = 7;
 	busConfig.intr_priority = 0;
 	busConfig.trans_queue_depth = 0;
+	// Internal pullups work fine with both BME280 and SH1106, so I didn't use any external ones
 	busConfig.flags.enable_internal_pullup = 1;
 	busConfig.flags.allow_pd = 0;
 
@@ -43,14 +44,13 @@ void app_main(void) {
 
 	// Setup the sensors
 	EnableLED(WHITE);
-	BME280 bme280 = SetupBME280(masterBusHandle);
+	SH1106 sh1106 = SetupSH1106(masterBusHandle);
 
 	EnableLED(BLUE);
-	PMS5003 pms5003 = SetupPMS5003();
+	BME280 bme280 = SetupBME280(masterBusHandle);
 
 	EnableLED(RED);
-	SH1106 sh1106 = SetupSH1106(masterBusHandle);
-	sh1106.screen[128 / 2][64 / 2] = true;
+	PMS5003 pms5003 = SetupPMS5003();
 
 	EnableLED(GREEN);
 	vTaskDelay(pdMS_TO_TICKS(1000));
@@ -62,18 +62,37 @@ void app_main(void) {
 
 	while (true) {
 		GetWeatherReadings(&bme280);
-		printf("temperature: %.2f C\nhumidity: %.2f%%\npressure: %.2f Pa\n",
-		       bme280.temperature, bme280.humidity, bme280.pressure);
+		GetAirQualityErrorCodes PMS5003ErrorCode = GetAirQuality(&pms5003);
 
-		GetAirQuality(&pms5003);
-		printf("pm 1.0: %d\npm 2.5: %d\npm 10: %d\n\n",
-		       pms5003.pm10, pms5003.pm25, pms5003.pm100);
+		char temp[20];
+		char humidity[20];
+		char pressure[20];
+		char pm10[20];
+		char pm25[20];
+		char pm100[20];
 
+		snprintf(temp, sizeof(temp), "T: %.0f C", bme280.temperature);
+		snprintf(humidity, sizeof(humidity), "H: %.0f%%", bme280.humidity);
+		snprintf(pressure, sizeof(pressure), "P: %.0f hPa", bme280.pressure / 100);
+
+		if (PMS5003ErrorCode != PMS_OK) {
+			snprintf(pm10, sizeof(pm10), "PM 1.0: %d*", pms5003.pm10);
+			snprintf(pm25, sizeof(pm25), "PM 2.5: %d*", pms5003.pm25);
+			snprintf(pm100, sizeof(pm100), "PM 10:  %d*", pms5003.pm100);
+		} else {
+			snprintf(pm10, sizeof(pm10), "PM 1.0: %d", pms5003.pm10);
+			snprintf(pm25, sizeof(pm25), "PM 2.5: %d", pms5003.pm25);
+			snprintf(pm100, sizeof(pm100), "PM 10:  %d", pms5003.pm100);
+		}
+
+		SH1106ClearScreen(&sh1106);
+		SH1106PrintText(&sh1106, temp, 1);
+		SH1106PrintText(&sh1106, humidity, 2);
+		SH1106PrintText(&sh1106, pressure, 3);
+		SH1106PrintText(&sh1106, pm10, 4);
+		SH1106PrintText(&sh1106, pm25, 5);
+		SH1106PrintText(&sh1106, pm100, 6);
 		SH1106Flush(&sh1106);
-
-		// snprintf();
-		//
-		// DisplayText("abcd\nabcd\n");
 
 		fflush(stdout);
 		vTaskDelay(1000 / portTICK_PERIOD_MS);
