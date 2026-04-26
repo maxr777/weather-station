@@ -6,6 +6,8 @@ Reads temperature, humidity, and pressure via a BME280 over I2C, monitors air qu
 All sensor drivers written from scratch against the datasheets. Structured as pure header-only libraries - I wanted to experiment with this after building projects with both the classic .h/.c split and unity builds. Uses Raylib naming conventions, though I've since come to prefer [Tiger Style](https://tigerstyle.dev/#nouns-and-verbs). Font by [petabyt](https://github.com/petabyt/font). Startup logo generated with Claude.
 
 ## Demo
+*Low res thumbnail — click to watch on YouTube*
+
 [![Breadboard demo](https://img.youtube.com/vi/4yA_y9Lus5Y/0.jpg)](https://youtu.be/4yA_y9Lus5Y)
 
 ## Schematic
