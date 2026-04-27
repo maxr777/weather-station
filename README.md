@@ -3,12 +3,15 @@ ESP32-based weather station built with ESP-IDF, no third-party sensor libraries.
 
 Reads temperature, humidity, and pressure via a BME280 over I2C, monitors air quality with a PMS5003 over UART, and displays everything on an SH1106 OLED. A few diagnostic LEDs signal hardware faults on startup.
 
-All sensor drivers written from scratch against the datasheets. Structured as pure header-only libraries - I wanted to experiment with this after building projects with both the classic .h/.c split and unity builds. Uses Raylib naming conventions, though I've since come to prefer [Tiger Style](https://tigerstyle.dev/#nouns-and-verbs). Font by [petabyt](https://github.com/petabyt/font). Startup logo generated with Claude.
+All sensor drivers written from scratch against the datasheets. Structured as pure header-only libraries — an experiment after building projects with both the classic .h/.c split and unity builds. Uses Raylib naming conventions - I'd use [Tiger Style](https://tigerstyle.dev/#nouns-and-verbs) if starting it today. Font by [petabyt](https://github.com/petabyt/font). Startup logo generated with Claude.
 
 ## Demo
-*Low res thumbnail — click to watch on YouTube*
+
+*Low res thumbnails — click to watch on YouTube*
 
 [![Breadboard demo](https://img.youtube.com/vi/4yA_y9Lus5Y/0.jpg)](https://youtu.be/4yA_y9Lus5Y)
+
+[![Perfboard build](https://img.youtube.com/vi/DK9z5tJ5IRI/0.jpg)](https://youtu.be/DK9z5tJ5IRI)
 
 ## Schematic
 ![Schematic](schematic.png)
