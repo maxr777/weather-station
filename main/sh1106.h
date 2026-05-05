@@ -215,9 +215,18 @@ static inline SH1106FlushErrorCodes SH1106Flush(SH1106 *sh) {
 static inline SH1106 SetupSH1106(i2c_master_bus_handle_t masterBusHandle) {
 	SH1106 sh = {};
 
-	while (i2c_master_probe(masterBusHandle, SH1106_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
-		ESP_LOGW("SH1106", "Display not found, retrying...");
-		vTaskDelay(pdMS_TO_TICKS(250));
+	{
+		bool boot = false;
+		for (int i = 0; i < 5; ++i) {
+			if (i2c_master_probe(masterBusHandle, SH1106_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
+				ESP_LOGW("SH1106", "Display not found, retrying...");
+				vTaskDelay(pdMS_TO_TICKS(250));
+			} else {
+				boot = true;
+				break;
+			}
+		}
+		if (!boot) esp_restart();
 	}
 
 	sh.config.dev_addr_length = I2C_ADDR_BIT_LEN_7;

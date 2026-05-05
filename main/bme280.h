@@ -44,9 +44,19 @@ typedef struct {
 
 static inline BME280 SetupBME280(i2c_master_bus_handle_t masterBusHandle) {
 	BME280 bme = {};
-	while (i2c_master_probe(masterBusHandle, BME280_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
-		ESP_LOGW("BME280", "Weather sensor not found, retrying...");
-		vTaskDelay(pdMS_TO_TICKS(250));
+
+	{
+		bool boot = false;
+		for (int i = 0; i < 5; ++i) {
+			if (i2c_master_probe(masterBusHandle, BME280_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
+				ESP_LOGW("BME280", "Weather sensor not found, retrying...");
+				vTaskDelay(pdMS_TO_TICKS(250));
+			} else {
+				boot = true;
+				break;
+			}
+		}
+		if (!boot) esp_restart();
 	}
 
 	bme.config.dev_addr_length = I2C_ADDR_BIT_LEN_7;

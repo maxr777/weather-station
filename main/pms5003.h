@@ -3,6 +3,7 @@
 
 #include "driver/uart.h"
 #include "esp_err.h"
+#include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "types.h"
@@ -62,30 +63,6 @@ static inline PMS5003Data ParsePMS5003Frame(const u8 *buf) {
 	return data;
 }
 
-static inline PMS5003 SetupPMS5003() {
-	uart_config_t uart_config = {
-	    .baud_rate = PMS5003_BAUD_RATE,
-	    .data_bits = UART_DATA_8_BITS,
-	    .parity = UART_PARITY_DISABLE,
-	    .stop_bits = UART_STOP_BITS_1,
-	    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
-	};
-	ESP_ERROR_CHECK(uart_param_config(PMS5003_UART_PORT, &uart_config));
-
-	// Using UART_PIN_NO_CHANGE for TX as I'm only reading from the PMS5003 - it's plugged in, though
-	ESP_ERROR_CHECK(uart_set_pin(PMS5003_UART_PORT, UART_PIN_NO_CHANGE, PMS5003_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
-
-	ESP_ERROR_CHECK(uart_driver_install(PMS5003_UART_PORT, PMS5003_BUF_SIZE * 2, 0, 0, NULL, 0));
-
-	// "Stable data should be got at least 30 seconds after the sensor
-	// wakeup from the sleep mode because of the fan’s performance."
-	// 5 seconds should be OK
-	vTaskDelay(pdMS_TO_TICKS(5000));
-
-	PMS5003 pms = {};
-	return pms;
-}
-
 static inline bool ValidateChecksum(const u8 *buf) {
 	int sum = 0;
 	for (int i = 0; i < PMS5003_FRAME_SIZE - 2; ++i) {
@@ -120,6 +97,7 @@ static inline const char *GetAirQualityErrorCodesToStr(const GetAirQualityErrorC
 	}
 }
 
+// TODO: Actually test unplugging when it's running (since it's soldered on rn)
 static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	const int START1 = 0x42;
 	const int START2 = 0x4d;
@@ -128,12 +106,11 @@ static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	// The BUF_SIZE constant is for the UART driver (how big the queue can get)
 	u8 buf[PMS5003_FRAME_SIZE] = {};
 
-	// i < 64 to not loop forever
 	bool match = false;
 	bool found_start = false;
-	for (int i = 0; i < 64; ++i) {
+	for (int i = 0; i < PMS5003_FRAME_SIZE + 1; ++i) {
 		u8 start;
-		if (uart_read_bytes(PMS5003_UART_PORT, &start, sizeof(start), pdMS_TO_TICKS(100)) != 1) continue;
+		if (uart_read_bytes(PMS5003_UART_PORT, &start, sizeof(start), pdMS_TO_TICKS(10)) != 1) continue;
 		if (start == START1) {
 			match = true;
 			continue;
@@ -162,6 +139,48 @@ static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	pms->pm100 = pms->data.data6;
 
 	return PMS_OK;
+}
+
+static inline PMS5003 SetupPMS5003() {
+	uart_config_t uart_config = {
+	    .baud_rate = PMS5003_BAUD_RATE,
+	    .data_bits = UART_DATA_8_BITS,
+	    .parity = UART_PARITY_DISABLE,
+	    .stop_bits = UART_STOP_BITS_1,
+	    .flow_ctrl = UART_HW_FLOWCTRL_DISABLE,
+	};
+	ESP_ERROR_CHECK(uart_param_config(PMS5003_UART_PORT, &uart_config));
+
+	// Using UART_PIN_NO_CHANGE for TX as I'm only reading from the PMS5003 - it's plugged in, though
+	ESP_ERROR_CHECK(uart_set_pin(PMS5003_UART_PORT, UART_PIN_NO_CHANGE, PMS5003_RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE));
+
+	ESP_ERROR_CHECK(uart_driver_install(PMS5003_UART_PORT, PMS5003_BUF_SIZE * 2, 0, 0, NULL, 0));
+
+	PMS5003 pms = {};
+
+	// Do one read to check if the PMS works (is plugged in, for example)
+	// If there's something wrong, restart (don't start with a broken sensor)
+	vTaskDelay(pdMS_TO_TICKS(100));
+	{
+		bool boot = false;
+		for (int i = 0; i < 5; ++i) {
+			if (GetAirQuality(&pms) != PMS_OK) {
+				ESP_LOGW("PMS5003", "PMS5003 not found, retrying...");
+				vTaskDelay(pdMS_TO_TICKS(250));
+			} else {
+				boot = true;
+				break;
+			}
+		}
+		if (!boot) esp_restart();
+	}
+
+	// "Stable data should be got at least 30 seconds after the sensor
+	// wakeup from the sleep mode because of the fan’s performance."
+	// 5 seconds should be OK
+	vTaskDelay(pdMS_TO_TICKS(5000));
+
+	return pms;
 }
 
 #endif

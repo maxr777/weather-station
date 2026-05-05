@@ -78,11 +78,13 @@ void app_main(void) {
 		}
 
 		if (PMS5003ErrorCode == PMS_OK) {
+			DisableLED(RED);
 			snprintf(pm10, sizeof(pm10), "PM 1.0: %d", pms5003.pm10);
 			snprintf(pm25, sizeof(pm25), "PM 2.5: %d", pms5003.pm25);
 			snprintf(pm100, sizeof(pm100), "PM 10:  %d", pms5003.pm100);
 		} else {
 			ESP_LOGE("PMS5003", "%s", GetAirQualityErrorCodesToStr(PMS5003ErrorCode));
+			EnableLED(RED);
 			snprintf(pm10, sizeof(pm10), "PM 1.0: %d*", pms5003.pm10);
 			snprintf(pm25, sizeof(pm25), "PM 2.5: %d*", pms5003.pm25);
 			snprintf(pm100, sizeof(pm100), "PM 10:  %d*", pms5003.pm100);
