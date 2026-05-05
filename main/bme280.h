@@ -135,6 +135,103 @@ static inline BME280 SetupBME280(i2c_master_bus_handle_t masterBusHandle) {
 	return bme;
 }
 
+static inline void RestartBME280(i2c_master_bus_handle_t masterBusHandle, BME280 *bme) {
+	i2c_master_bus_rm_device(bme->handle);
+
+	memset(&bme->handle, 0, sizeof(bme->handle));
+	memset(&bme->config, 0, sizeof(bme->config));
+	memset(&bme->offsets, 0, sizeof(bme->offsets));
+	bme->t_fine = 0;
+
+	while (i2c_master_probe(masterBusHandle, BME280_ADDR, pdMS_TO_TICKS(100)) != ESP_OK) {
+		ESP_LOGW("BME280", "Weather sensor not found");
+		return;
+	}
+
+	bme->config.dev_addr_length = I2C_ADDR_BIT_LEN_7;
+	bme->config.device_address = BME280_ADDR;
+	bme->config.scl_speed_hz = 100000;
+
+	i2c_master_bus_add_device(masterBusHandle, &bme->config, &bme->handle);
+
+	// reset - write 0xB6 to 0xE0
+	{
+		uint8_t buf[2] = {0xE0, 0xB6};
+		i2c_master_transmit(bme->handle, buf, 2, 100);
+
+		// wait for the chip to come back
+		vTaskDelay(pdMS_TO_TICKS(10));
+	}
+
+	// check chip id - read 0xD0, should be 0x60
+	{
+		uint8_t reg = 0xD0;
+		uint8_t val = 0;
+		i2c_master_transmit_receive(bme->handle, &reg, 1, &val, sizeof(val), 100);
+		if (val != 0x60) {
+			ESP_LOGE("BME280", "Wrong chip ID: expected 0x60, got 0x%02X", val);
+			return;
+		}
+	}
+
+	// read the offset values - they're used for calibration of each bme280, as there are factory variances
+	// so you apply the offsets to the raw values you get the get the actual values
+	{
+		u8 reg = 0x88;
+		u8 raw[24];
+		i2c_master_transmit_receive(bme->handle, &reg, 1, raw, sizeof(raw), 100);
+
+		bme->offsets.T1 = (u16)((u16)raw[1] << 8 | raw[0]);
+		bme->offsets.T2 = (i16)((u16)raw[3] << 8 | raw[2]);
+		bme->offsets.T3 = (i16)((u16)raw[5] << 8 | raw[4]);
+		bme->offsets.P1 = (u16)((u16)raw[7] << 8 | raw[6]);
+		bme->offsets.P2 = (i16)((u16)raw[9] << 8 | raw[8]);
+		bme->offsets.P3 = (i16)((u16)raw[11] << 8 | raw[10]);
+		bme->offsets.P4 = (i16)((u16)raw[13] << 8 | raw[12]);
+		bme->offsets.P5 = (i16)((u16)raw[15] << 8 | raw[14]);
+		bme->offsets.P6 = (i16)((u16)raw[17] << 8 | raw[16]);
+		bme->offsets.P7 = (i16)((u16)raw[19] << 8 | raw[18]);
+		bme->offsets.P8 = (i16)((u16)raw[21] << 8 | raw[20]);
+		bme->offsets.P9 = (i16)((u16)raw[23] << 8 | raw[22]);
+
+		u8 h1reg = 0xA1;
+		i2c_master_transmit_receive(bme->handle, &h1reg, 1, &bme->offsets.H1, sizeof(bme->offsets.H1), 100);
+
+		u8 hreg = 0xE1;
+		u8 hraw[7];
+		i2c_master_transmit_receive(bme->handle, &hreg, 1, hraw, sizeof(hraw), 100);
+
+		bme->offsets.H2 = (i16)((u16)hraw[1] << 8 | hraw[0]);
+		bme->offsets.H3 = hraw[2];
+		bme->offsets.H4 = (i16)((i8)hraw[3] << 4 | (hraw[4] & 0x0F));
+		bme->offsets.H5 = (i16)((i8)hraw[5] << 4 | (hraw[4] >> 4));
+		bme->offsets.H6 = (i8)hraw[6];
+	}
+
+	// set the humidity oversampling to x1
+	// oversampling - how many times the sensors sample before giving a reading
+	// x1 - one raw sample, higher = less noise but takes longer and uses more power
+	{
+		u8 buf[2] = {0xF2, 0x01};
+		i2c_master_transmit(bme->handle, buf, sizeof(buf), 100);
+	}
+
+	// set the temperature oversampling to x2
+	// set the pressure oversampling to x1
+	// set it to normal mode (auto toggles between measuring and standby)
+	{
+		u8 buf[2] = {0xF4, 0x27};
+		i2c_master_transmit(bme->handle, buf, sizeof(buf), 100);
+	}
+
+	// set the standby time to 1000ms (1s wait in between measurements)
+	// set the filter to off (give raw values, no smoothing of sudden spikes)
+	{
+		u8 buf[2] = {0xF5, 0xA0};
+		i2c_master_transmit(bme->handle, buf, sizeof(buf), 100);
+	}
+}
+
 // temperature - returns degrees C * 100 (e.g. 2345 = 23.45°C)
 static inline i32 CompensateTemperature(BME280 *bme, i32 raw_t) {
 	i32 var1, var2, T;

@@ -67,11 +67,14 @@ void app_main(void) {
 			snprintf(temp, sizeof(temp), "T: %.0f C", bme280.temperature);
 			snprintf(humidity, sizeof(humidity), "H: %.0f%%", bme280.humidity);
 			snprintf(pressure, sizeof(pressure), "P: %.0f hPa", bme280.pressure / 100);
+			DisableLED(BLUE);
 		} else {
 			ESP_LOGE("BME280", "%s", GetWeatherReadingsErrorCodesToStr(BME280ErrorCode));
+			EnableLED(BLUE);
 			snprintf(temp, sizeof(temp), "T: %.0f C*", bme280.temperature);
 			snprintf(humidity, sizeof(humidity), "H: %.0f%%*", bme280.humidity);
 			snprintf(pressure, sizeof(pressure), "P: %.0f hPa*", bme280.pressure / 100);
+			RestartBME280(masterBusHandle, &bme280);
 		}
 
 		if (PMS5003ErrorCode == PMS_OK) {
