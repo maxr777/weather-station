@@ -160,7 +160,7 @@ static inline PMS5003 SetupPMS5003() {
 
 	// Do one read to check if the PMS works (is plugged in, for example)
 	// If there's something wrong, restart (don't start with a broken sensor)
-	vTaskDelay(pdMS_TO_TICKS(100));
+	vTaskDelay(pdMS_TO_TICKS(1000));
 	{
 		bool boot = false;
 		for (int i = 0; i < 5; ++i) {
@@ -175,12 +175,44 @@ static inline PMS5003 SetupPMS5003() {
 		if (!boot) esp_restart();
 	}
 
+	/*
+	 * NOTE: I decided to disable it because I don't like waiting
+	 * Even with 5 seconds of wait the readings would be unstable for a couple
+	 * of seconds anyway, so it's not like waiting 5s in the setup helped anything
+	 */
+
 	// "Stable data should be got at least 30 seconds after the sensor
 	// wakeup from the sleep mode because of the fan’s performance."
-	// 5 seconds should be OK
-	vTaskDelay(pdMS_TO_TICKS(5000));
+	// 4 seconds should be OK
+	// vTaskDelay(pdMS_TO_TICKS(4000));
 
 	return pms;
+}
+
+const char *GetPM10Quality(int q) {
+	if (q <= 10) return "G";
+	if (q <= 25) return "M";
+	if (q <= 40) return "U1";
+	if (q <= 100) return "U2";
+	return "UH";
+}
+
+const char *GetPM25Quality(int q) {
+	if (q <= 12) return "G";
+	if (q <= 35.4) return "M";
+	if (q <= 55.4) return "U1";
+	if (q <= 150.4) return "U2";
+	if (q <= 250.4) return "U3";
+	return "HZ";
+}
+
+const char *GetPM100Quality(int q) {
+	if (q <= 54) return "G";
+	if (q <= 154) return "M";
+	if (q <= 254) return "U1";
+	if (q <= 354) return "U2";
+	if (q <= 424) return "U3";
+	return "HZ";
 }
 
 #endif
