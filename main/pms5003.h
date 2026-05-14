@@ -110,7 +110,7 @@ static inline GetAirQualityErrorCodes GetAirQuality(PMS5003 *pms) {
 	bool found_start = false;
 	for (int i = 0; i < PMS5003_FRAME_SIZE + 1; ++i) {
 		u8 start;
-		if (uart_read_bytes(PMS5003_UART_PORT, &start, sizeof(start), pdMS_TO_TICKS(20)) != 1) continue;
+		if (uart_read_bytes(PMS5003_UART_PORT, &start, sizeof(start), pdMS_TO_TICKS(10)) != 1) continue;
 		if (start == START1) {
 			match = true;
 			continue;

@@ -106,6 +106,9 @@ void app_main(void) {
 		SH1106FlushErrorCodes SH1106ErrorCode = SH1106Flush(&sh1106);
 		if (SH1106ErrorCode != SH_OK) {
 			ESP_LOGE("SH1106", "%s", FlushErrorCodesToStr(SH1106ErrorCode));
+			EnableLED(WHITE);
+		} else {
+			DisableLED(WHITE);
 		}
 
 		fflush(stdout);
